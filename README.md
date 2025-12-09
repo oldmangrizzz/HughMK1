@@ -15,6 +15,10 @@ Hugh will be my own private version of J.A.R.V.I.S., Friday or E.D.I.T.H., fully
 - **Building a Neurosymbolic AI System** (PDF)
 - **Hugh Distributed Architecture** (PDF)
 
+### CompanionOS Integration
+- **[companionOS/](./companionOS/)** - Complete iOS/watchOS/CarPlay companion backend imported for integration
+- **[CompanionOS Import Notes](./companionOS/IMPORT_NOTE.md)** - Details about the imported codebase and integration roadmap
+
 ## Quick Start
 
 To start developing H.U.G.H. on Apple platforms:
