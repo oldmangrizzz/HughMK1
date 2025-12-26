@@ -3,7 +3,7 @@ import Foundation
 enum Constants {
   static let appGroup = ProcessInfo.processInfo.environment["APP_GROUP_ID"] ??
     "group.com.your.bundle.companion"
-  static let convexURL = ProcessInfo.processInfo.environment["CONVEX_DEPLOYMENT_URL"] ?? ""
+  static let convexURL = "https://precise-alpaca-984.convex.cloud"
   static let convexAuth = ProcessInfo.processInfo.environment["CONVEX_AUTH_TOKEN"] ?? ""
   static let bundlePrefix = ProcessInfo.processInfo.environment["BUNDLE_PREFIX"] ?? "com.your.bundle"
 
