@@ -66,11 +66,28 @@ export default defineSchema({
       createdBy: v.optional(v.string()),
       tags: v.optional(v.array(v.string())),
     })),
+    // AR/MR anchor fields
+    anchorId: v.optional(v.string()),           // WebXR persistent anchor UUID
+    arPlaneId: v.optional(v.string()),          // detected surface plane ID
+    realWorldPosition: v.optional(v.array(v.float64())), // position relative to physical room origin
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_type", ["type"])
     .index("by_createdAt", ["createdAt"]),
+
+  // H.U.G.H. AR vision observation log
+  ar_observations: defineTable({
+    sessionId: v.string(),
+    timestamp: v.float64(),
+    frameDescription: v.string(),              // H.U.G.H.'s vision reasoning output
+    detectedObjects: v.array(v.string()),      // objects H.U.G.H. identified in frame
+    detectedPlanes: v.array(v.string()),       // plane types: floor, wall, table, ceiling
+    operatorQuery: v.optional(v.string()),     // what the operator asked about the scene
+    confidence: v.float64(),
+  })
+    .index("by_sessionId", ["sessionId"])
+    .index("by_timestamp", ["timestamp"]),
 
   // Ambient / global scene state — one record per session
   workshop_environment: defineTable({
@@ -208,4 +225,19 @@ export default defineSchema({
     .index("by_nodeId", ["nodeId"])
     .index("by_status", ["status"])
     .index("by_timestamp", ["timestamp"]),
+
+  // Home Assistant state change events — physical world → Workshop ambient
+  ha_events: defineTable({
+    entityId: v.string(),                    // e.g. "light.living_room", "sensor.front_door"
+    state: v.string(),                       // new state value
+    attributes: v.optional(v.string()),      // JSON-stringified HA attributes
+    description: v.optional(v.string()),     // H.U.G.H.-generated event summary
+    domain: v.string(),                      // e.g. "light", "switch", "sensor", "binary_sensor"
+    processed: v.boolean(),                  // has H.U.G.H. acted on this event
+    timestamp: v.number(),
+  })
+    .index("by_entityId", ["entityId"])
+    .index("by_domain", ["domain"])
+    .index("by_timestamp", ["timestamp"])
+    .index("by_processed", ["processed"]),
 });

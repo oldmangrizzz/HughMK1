@@ -623,3 +623,28 @@ export const callExternalAPI = action({
 - **Indexes**: `defineTable(...).index('by_timestamp', ['timestamp'])` — always index fields you filter/sort by
 - **Scheduled functions**: `ctx.scheduler.runAfter(ms, api.fn, args)` — for timed automations
 - **Auth**: Convex Auth or custom JWT validation in `auth.config.ts` — not yet wired for H.U.G.H. (internal use, no public auth needed)
+
+---
+
+## WORKSHOP UI: Vortex Field Environment (PRISM v2.0 Final)
+
+The Workshop frontend is a living vortex environment, not a traditional UI.
+Deployed at: https://workshop.grizzlymedicine.icu
+
+### Visual Architecture
+- **CliffordField**: 500 continuous energy stream lines tracing the Clifford attractor
+  Parameters drift between 4 presets (butterfly/lightning/spiral/vortex) every 30s
+  Color shifts by active mode. Camera has mouse-driven parallax — you're inside the field.
+- **VoicePortal**: Horizontal energy line at screen bottom. Space bar or click activates
+  Web Speech API + AudioContext waveform visualization. Primary interaction surface.
+- **TopNav**: Ghost navigation — only appears when mouse reaches top 80px of screen
+  Auto-hides after 1.2s. No sidebar. Active mode has a 60vh drop-line into content.
+- **SovereignPanel**: Liquid glass panels — SVG displacement filter at edges,
+  hue-rotating backdrop-filter, chromatic aberration on titles, 0.28 opacity
+- **HughPresenceLocus**: Drifting orb in upper-right that pulses with actual health
+  Polls api.grizzlymedicine.icu/health every 10s. Dims red when offline.
+
+### Interaction Philosophy  
+Voice first → visual second → touch when necessary
+The UI is H.U.G.H.'s response made visible. Not a dashboard — a shared environment.
+Reference: Tony Stark's E-Scape, The Matrix Construct, The Holodeck.

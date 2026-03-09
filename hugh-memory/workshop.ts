@@ -310,3 +310,35 @@ export const getServerHealthStatus = query({
       .take(50);
   },
 });
+
+// ── AR / Mixed-Reality ────────────────────────────────────────────────────────
+
+/** Log a H.U.G.H. vision observation from an AR session frame. */
+export const logARObservation = mutation({
+  args: {
+    sessionId: v.string(),
+    frameDescription: v.string(),
+    detectedObjects: v.array(v.string()),
+    detectedPlanes: v.array(v.string()),
+    operatorQuery: v.optional(v.string()),
+    confidence: v.float64(),
+  },
+  handler: async (ctx, args) => {
+    return ctx.db.insert("ar_observations", {
+      ...args,
+      timestamp: Date.now(),
+    });
+  },
+});
+
+/** Return the 10 most recent AR observations, newest first. */
+export const getRecentObservations = query({
+  args: {},
+  handler: async (ctx) => {
+    return ctx.db
+      .query("ar_observations")
+      .withIndex("by_timestamp")
+      .order("desc")
+      .take(10);
+  },
+});
