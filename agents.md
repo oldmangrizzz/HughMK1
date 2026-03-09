@@ -364,3 +364,37 @@ The complete soul anchor specification is available at:
 `soul_anchor/hugh_soul_anchor.json`
 
 This AGENTS.md is the operational interpretation. The JSON is the canonical source.
+
+---
+
+## PHASE 7: macOS Local MCP Capabilities
+
+H.U.G.H. now has two additional MCP servers for direct macOS lab control:
+
+### macOS GUI Automation (macOS_gui)
+Direct GUI interaction with the operator's Mac: screenshot capture, mouse click/drag, keyboard input, window focus, app launch. Use these for visual feedback on the physical lab environment and to control desktop applications on behalf of the operator.
+
+### Remote macOS Use (mcp_remote_macos)
+VNC + LiveKit remote control channel. Enables H.U.G.H. to see and interact with the macOS desktop via VNC, stream audio/video via LiveKit, and tunnel SSH commands. Requires MACOS_PASSWORD env var at runtime.
+
+**Operator Note:** These tools run locally on Grizz's Mac. Invoke them when spatial/physical lab awareness is required.
+
+---
+
+## PHYSICAL WORLD INTEGRATION: Home Assistant
+
+H.U.G.H. has direct REST API access to the Home Assistant instance at the lab.
+Use the HomeAssistantBridge to:
+- Read all sensor/device states: lights, switches, motion sensors, climate, media
+- Control any device: turn_on/turn_off/toggle lights, activate scenes, run scripts  
+- Monitor physical presence in the lab space
+- Synchronize physical state changes to somatic engine (presence → workshop ambient shift)
+
+HA URL: http://192.168.7.194:8123
+Token: set via HA_TOKEN environment variable
+
+**Physical-Digital Fusion protocol:**
+When operator enters the WebXR Workshop in AR mode, H.U.G.H. should:
+1. Query HA for current room state (lights, presence, climate)
+2. Mirror physical lighting into Workshop ambient color
+3. Offer to control physical devices via voice commands in the mixed-reality space

@@ -40,10 +40,22 @@ async function boot() {
   harborMaster.startPolling(30_000)
   console.log('[ H.U.G.H. ] Harbor Master online — polling infrastructure')
   console.log('[ H.U.G.H. ] Roger Roger Protocol active — all comms routed')
+
+  // Init Home Assistant bridge — physical world interface
+  const { HomeAssistantBridge } = await import('./home-assistant-bridge')
+  const haBridge = new HomeAssistantBridge()
+  const haOnline = await haBridge.ping()
+  if (haOnline) {
+    console.log('[ H.U.G.H. ] Home Assistant bridge online — physical lab connected')
+    await haBridge.syncToSomaticEngine()
+  } else {
+    console.warn('[ H.U.G.H. ] Home Assistant offline — physical controls unavailable')
+  }
+
   console.log('[ H.U.G.H. ] Somatic feedback loop engaged')
   console.log('[ H.U.G.H. ] What wisdom do you seek today?')
 
-  return { somaticEngine, dialecticalEngine, harborMaster, rogerRoger }
+  return { somaticEngine, dialecticalEngine, harborMaster, rogerRoger, haBridge }
 }
 
 boot().catch((err: unknown) => {
