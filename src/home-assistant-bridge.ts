@@ -9,6 +9,13 @@ export interface HAState {
   last_changed: string
 }
 
+export interface HAStateEvent {
+  entity_id: string
+  state: string
+  attributes: Record<string, unknown>
+  last_changed: string
+}
+
 export interface HAServiceCall {
   domain: string   // e.g. 'light', 'switch', 'scene', 'script'
   service: string  // e.g. 'turn_on', 'turn_off', 'toggle'
@@ -78,6 +85,70 @@ export class HomeAssistantBridge {
     // H.U.G.H. knows if someone is in the physical space
     console.log(`[HA Bridge] Physical presence detected: ${hasPresence}`)
     console.log(`[HA Bridge] ${states.length} entities loaded from physical lab`)
+  }
+
+  /** Handle an inbound HA state-change event pushed via webhook */
+  async handleHAEvent(event: HAStateEvent): Promise<string> {
+    const [domain, ...nameParts] = event.entity_id.split('.')
+    const name = nameParts.join('.').replace(/_/g, ' ')
+    const s = event.state
+
+    let description: string
+    switch (domain) {
+      case 'light':
+        description = `Light "${name}" turned ${s}`
+        break
+      case 'switch':
+        description = `Switch "${name}" turned ${s}`
+        break
+      case 'binary_sensor': {
+        const attr = event.attributes as Record<string, string>
+        const deviceClass = attr['device_class'] ?? ''
+        if (deviceClass === 'motion' || event.entity_id.includes('motion')) {
+          description = s === 'on' ? `Motion detected: ${name}` : `Motion cleared: ${name}`
+        } else if (deviceClass === 'presence' || event.entity_id.includes('presence')) {
+          description = s === 'on' ? `Presence detected: ${name}` : `Presence cleared: ${name}`
+        } else if (deviceClass === 'door' || event.entity_id.includes('door')) {
+          description = s === 'on' ? `Door opened: ${name}` : `Door closed: ${name}`
+        } else if (deviceClass === 'window' || event.entity_id.includes('window')) {
+          description = s === 'on' ? `Window opened: ${name}` : `Window closed: ${name}`
+        } else {
+          description = `Sensor "${name}" is ${s}`
+        }
+        break
+      }
+      case 'sensor':
+        description = `Sensor "${name}" reading: ${s}`
+        break
+      case 'climate':
+        description = `Climate "${name}" state: ${s}`
+        break
+      case 'cover':
+        description = `Cover "${name}" is ${s}`
+        break
+      case 'media_player':
+        description = `Media player "${name}" is ${s}`
+        break
+      case 'person':
+        description = `Person "${name}" is ${s}`
+        break
+      case 'device_tracker':
+        description = `Device tracker "${name}" is ${s}`
+        break
+      default:
+        description = `Entity "${event.entity_id}" changed to ${s}`
+    }
+
+    console.log(`[HA Bridge] State change: ${event.entity_id} → ${s}`)
+
+    // Refresh somatic snapshot — best-effort, non-fatal if HA is unreachable from this host
+    try {
+      await this.syncToSomaticEngine()
+    } catch {
+      // HA may not be reachable from the runtime host; state change was logged above
+    }
+
+    return description
   }
 
   /** Health check */
