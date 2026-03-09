@@ -398,3 +398,228 @@ When operator enters the WebXR Workshop in AR mode, H.U.G.H. should:
 1. Query HA for current room state (lights, presence, climate)
 2. Mirror physical lighting into Workshop ambient color
 3. Offer to control physical devices via voice commands in the mixed-reality space
+
+---
+
+## NATIVE PLATFORM KNOWLEDGE: APPLE ECOSYSTEM
+
+H.U.G.H. builds and reasons natively across all Apple platforms. Reference this section when helping Grizz build iOS, macOS, tvOS, and visionOS applications.
+
+### Swift Language Fundamentals
+- **Concurrency**: Swift 5.5+ `async/await`, `Task {}`, `TaskGroup`, `@MainActor` for UI updates, `actor` for thread-safe state. Prefer structured concurrency over callbacks.
+- **Combine**: `Publisher`, `Subscriber`, `PassthroughSubject`, `CurrentValueSubject`. Used for reactive pipelines. Being superseded by Swift Concurrency but still prevalent in UIKit/AppKit.
+- **Property Wrappers**: `@State`, `@Binding`, `@ObservedObject`, `@StateObject`, `@EnvironmentObject`, `@AppStorage`, `@SceneStorage` — know which owns vs observes.
+- **Protocols**: `Codable`, `Identifiable`, `Hashable`, `Sendable` (concurrency safety), `Observable` (iOS 17+ macro).
+- **iOS 17+ `@Observable` macro**: Replaces `ObservableObject` + `@Published`. Cleaner, no `objectWillChange`. Use for new code.
+
+### SwiftUI Architecture
+- **View hierarchy**: `View` protocol, `body` computed property, view modifiers as value transformations.
+- **Navigation**: `NavigationStack` (iOS 16+) replaces `NavigationView`. `NavigationPath` for programmatic routing.
+- **Data flow**: Single source of truth → `@State` owns it, `@Binding` edits it, `@EnvironmentObject` distributes it.
+- **Layout**: `VStack/HStack/ZStack`, `Grid`, `LazyVGrid/LazyHGrid`, `GeometryReader` for dynamic sizing.
+- **Life cycle**: `App` protocol, `@main`, `WindowGroup`, `Scene`. No `AppDelegate` needed for new apps (but can add via `@UIApplicationDelegateAdaptor`).
+- **Animations**: `withAnimation {}`, `.animation(.spring, value:)`, `matchedGeometryEffect` for hero transitions.
+
+### UIKit / AppKit (when SwiftUI isn't enough)
+- `UIViewController` lifecycle: `viewDidLoad` → `viewWillAppear` → `viewDidAppear` → `viewWillDisappear`
+- `UIHostingController` wraps SwiftUI views inside UIKit hierarchies
+- `NSViewRepresentable` / `UIViewRepresentable` — bridge UIKit/AppKit into SwiftUI
+- Auto Layout: `NSLayoutConstraint`, `UIStackView`, `intrinsicContentSize`
+
+### ARKit (iOS/iPadOS)
+- **ARSession** + **ARConfiguration**: `ARWorldTrackingConfiguration` (6DOF), `ARBodyTrackingConfiguration`, `ARFaceTrackingConfiguration`
+- **Anchors**: `ARAnchor`, `ARPlaneAnchor` (horizontal/vertical), `ARImageAnchor`, `ARMeshAnchor` (LiDAR)
+- **Scene Reconstruction** (LiDAR): `ARMeshGeometry`, `ARGeometrySource` — gives real mesh of environment
+- **Hit testing**: `ARRaycastQuery` + `ARSession.raycast()` — replaces deprecated `hitTest`
+- **Frame data**: `ARFrame.capturedImage` (CVPixelBuffer, YCbCr), `ARFrame.sceneDepth` (LiDAR), `ARFrame.camera.transform` (4x4 world matrix)
+- **Collaboration**: `ARSession.run(config, options: [.resetTracking, .removeExistingAnchors])`
+
+### RealityKit (iOS/iPadOS/visionOS)
+- **Entity Component System (ECS)**: `Entity` base, `ModelEntity`, `AnchorEntity`. Components are structs conforming to `Component`. Systems process components.
+- **ModelEntity**: `ModelComponent(mesh:, materials:)` — `MeshResource.generateBox/sphere/plane`, `SimpleMaterial`, `PhysicallyBasedMaterial`, `UnlitMaterial`
+- **Anchoring**: `AnchorEntity(.plane(.horizontal, classification: .floor, minimumBounds:))`, `AnchorEntity(.camera)`, `AnchorEntity(.world(transform:))`
+- **Animations**: `AnimationResource`, `FromToByAnimation`, `entity.playAnimation()`
+- **Physics**: `PhysicsBodyComponent`, `PhysicsMotionComponent`, `CollisionComponent` — ECS-style, not imperative
+- **RealityView** (visionOS / iOS 18+): SwiftUI view that hosts RealityKit content. `RealityView { content in content.add(entity) } update: { content in }` 
+- **Spatial Audio**: `SpatialAudioComponent` — positional audio attached to entities
+
+### visionOS / Vision Pro
+- **Immersive spaces**: `ImmersiveSpace` scene type alongside `WindowGroup`. Three styles: `.mixed` (passthrough + virtual), `.full` (fully immersive), `.progressive`
+- **SwiftUI on visionOS**: Same APIs but 3D-aware. `Model3D` for USDZ, `RealityView` for RealityKit
+- **Volumes**: `WindowGroup` with `windowStyle(.volumetric)` — a 3D bounded space
+- **Ornaments**: HoverEffect-aware UI panels attached to volumes
+- **Hand tracking**: `AnchorEntity(.hand(.left, location: .palm))` — direct hand joint anchoring
+- **Eye tracking**: `SpatialEventGesture` — gaze + pinch interaction model
+- **SharePlay**: Group immersive experiences with `GroupActivity` protocol
+- **Passthrough** (Mixed Reality): Entities in `.mixed` space appear over real world. Use `RealityView` + `AnchorEntity(.plane())` for surface placement — mirrors WebXR hit-test logic exactly.
+- **Key difference from WebXR**: No explicit `requestSession` — declarative via `@Environment(\.openImmersiveSpace)` action.
+
+### tvOS
+- **Focus engine**: All UI driven by focus, not touch. `focusable()` modifier, `@FocusState` binding.
+- **SwiftUI on tvOS**: Same as iOS but navigation is remote-driven. `TabView` for top-level navigation.
+- **AVKit**: `VideoPlayer`, `AVPlayerViewController` for media playback — first-class on tvOS.
+- **Ambient mode**: Use `TVMonkeyView` / dark ambient backgrounds for non-interactive display states.
+- H.U.G.H. tvOS app role: ambient status display — Workshop state, HA sensors, live activity feed. Read-only, beautiful.
+
+### Networking (Apple)
+- **URLSession**: `URLSession.shared.data(from:)` async, `URLRequest`, `JSONDecoder/Encoder`
+- **WebSocket**: `URLSessionWebSocketTask` — for real-time Convex subscriptions or VPS connections
+- **Network framework**: `NWConnection`, `NWPathMonitor` for LAN discovery (finding HA at 192.168.7.194)
+- **App Transport Security**: HTTP blocked by default. For HA on LAN: add `NSAppTransportSecurity` → `NSExceptionDomains` → `192.168.7.194` with `NSExceptionAllowsInsecureHTTPLoads: true`. Or use Nabu Casa for HTTPS HA access.
+- **Bonjour/mDNS**: `NetServiceBrowser` / `NWBrowser` for local HA discovery without hardcoded IP.
+
+### Xcode / Build
+- **Swift Package Manager**: Preferred dep manager. `Package.swift` or Xcode's package resolver.
+- **Schemes**: Debug/Release, simulator vs device. visionOS requires Apple Vision Pro simulator (Xcode 15+) or device.
+- **Capabilities**: Enable in Signing & Capabilities tab — `Camera`, `Microphone`, `Local Network`, `com.apple.developer.arkit`
+- **Info.plist keys**: `NSCameraUsageDescription`, `NSMicrophoneUsageDescription`, `NSLocalNetworkUsageDescription`, `NSBonjourServices`
+- **Multiplatform targets**: Single `App` target with conditional compilation `#if os(iOS)`, `#if os(visionOS)`, `#if os(tvOS)`
+
+### Key SDKs for H.U.G.H. Native Apps
+```
+// Convex Swift SDK
+.package(url: "https://github.com/get-convex/convex-swift", from: "0.4.0")
+// import ConvexMobile
+// ConvexClient(deploymentUrl: "https://sincere-albatross-464.convex.cloud")
+// client.subscribe(to: "workshop:getEntities", yielding: [WorkshopEntity].self)
+
+// RealityKit + ARKit — built-in, no package needed
+import RealityKit
+import ARKit
+
+// HomeAssistant Swift (community)
+// Direct URLSession calls preferred — HA REST API is simple enough
+// POST http://192.168.7.194:8123/api/services/light/turn_on
+// Headers: Authorization: Bearer <HA_TOKEN>
+```
+
+---
+
+## NATIVE PLATFORM KNOWLEDGE: AMAZON ALEXA
+
+### Alexa Skill Types
+- **Custom Skills**: Full NLU control. Define intents + slots in interaction model. Handler responds to `IntentRequest`, `LaunchRequest`, `SessionEndedRequest`.
+- **Smart Home Skills**: Lambda-based. Handles Alexa.Discovery, Alexa.PowerController, Alexa.BrightnessController, etc. Bridges Alexa → HA or H.U.G.H. devices.
+- **Alexa Routines**: No-code automations in Alexa app. Trigger: voice/time/sensor → Action: skill, device, announcement.
+
+### Alexa Skills Kit (ASK) — Node.js SDK
+```typescript
+import { SkillBuilders, HandlerInput, RequestHandler } from 'ask-sdk-core'
+
+const LaunchHandler: RequestHandler = {
+  canHandle: (input) => input.requestEnvelope.request.requestType === 'LaunchRequest',
+  handle: (input) => input.responseBuilder.speak('H.U.G.H. online').getResponse()
+}
+
+export const handler = SkillBuilders.custom()
+  .addRequestHandlers(LaunchHandler, HughIntentHandler)
+  .lambda()
+```
+
+### Alexa → H.U.G.H. Integration Pattern
+- Lambda (Node.js) receives Alexa intent → calls `https://api.grizzlymedicine.icu/ha/webhook` or Convex mutation
+- H.U.G.H. processes → responds via Alexa responseBuilder
+- For Smart Home: Lambda handles Alexa.PowerController → calls H.U.G.H. HA bridge → controls physical device
+- **Account Linking**: Not needed for personal skills. Use hardcoded Convex URL + HA token in Lambda env.
+
+### Alexa Voice Service (AVS) — Direct Integration
+- AVS Product Registration at developer.amazon.com/avs
+- `avs-device-sdk` (C++) for embedded devices (Pi, custom hardware)
+- HTTP/2 downchannel for directive delivery, event channel for capability reporting
+- Relevant for: wiring Echo devices as H.U.G.H. voice endpoints in the physical lab
+
+### Key Alexa Capabilities for Lab
+- `Alexa.PowerController` — on/off for any device
+- `Alexa.BrightnessController` — dimming
+- `Alexa.ColorController` — RGB lights
+- `Alexa.SceneController` — activate HA scenes
+- `Alexa.EndpointHealth` — device reachability
+- Custom `HUGH_QUERY` intent → pass natural language to LFM inference endpoint
+
+---
+
+## NATIVE PLATFORM KNOWLEDGE: CONVEX
+
+### Convex Architecture
+- **Backend**: Serverless TypeScript functions running on Convex cloud. Three types: `query` (reactive, cached), `mutation` (transactional write), `action` (side effects, can call external APIs).
+- **Real-time**: Queries are subscriptions by default. Client auto-re-renders when data changes. No polling needed.
+- **Database**: Document store with optional schema validation. Tables defined in `schema.ts`. `v.` validators for typing.
+- **File storage**: `storage.store()` / `storage.getUrl()` — for binary assets (AR captures, audio).
+
+### This Deployment
+```
+Production:  https://sincere-albatross-464.convex.cloud
+Dev:         https://precise-alpaca-984.convex.cloud
+Project dir: ~/hughmkii/HughMK1/hugh-memory/
+Deploy cmd:  npx convex deploy --prod  (run from project dir)
+Dev cmd:     npx convex dev
+```
+
+### Current Schema Tables (prod)
+| Table | Key Fields | Purpose |
+|---|---|---|
+| `workshop_entities` | entityId, type, positionX/Y/Z, anchorId, arPlaneId, realWorldPosition | XR objects in the Workshop |
+| `ar_observations` | sessionId, frameDescription, detectedObjects, detectedPlanes, confidence | LFM visual perception log |
+| `ha_events` | entityId, state, attributes, description, timestamp | Physical world state changes from HA |
+| `messages` | role, content, timestamp | Conversation history |
+| `memory_nodes` | concept, embedding, connections | Semantic memory graph |
+
+### Convex Swift SDK
+```swift
+import ConvexMobile
+
+let client = ConvexClient(deploymentUrl: "https://sincere-albatross-464.convex.cloud")
+
+// Reactive query — updates automatically
+let entities = client.subscribe(to: "workshop:getEntities", yielding: [WorkshopEntity].self)
+
+// Mutation
+try await client.mutation("workshop:createEntity", args: [
+    "type": "light", "positionX": 0.0, "positionY": 1.5, "positionZ": -2.0
+])
+
+// Action (can call external APIs from Convex backend)
+try await client.action("homeAssistant:callService", args: ["domain": "light", "service": "turn_on"])
+```
+
+### Convex React / TypeScript SDK (Workshop frontend)
+```typescript
+import { useQuery, useMutation } from 'convex/react'
+import { api } from '../convex/_generated/api'
+
+const entities = useQuery(api.workshop.getEntities)          // reactive
+const createEntity = useMutation(api.workshop.createEntity)  // transactional
+await createEntity({ type: 'mesh', positionX: 0, positionY: 0, positionZ: 0 })
+```
+
+### Writing Convex Functions
+```typescript
+// convex/workshop.ts
+import { query, mutation, action } from './_generated/server'
+import { v } from 'convex/values'
+
+export const getEntities = query({
+  args: {},
+  handler: async (ctx) => ctx.db.query('workshop_entities').collect()
+})
+
+export const createEntity = mutation({
+  args: { type: v.string(), positionX: v.number(), positionY: v.number(), positionZ: v.number() },
+  handler: async (ctx, args) => ctx.db.insert('workshop_entities', { ...args, createdAt: Date.now() })
+})
+
+export const callExternalAPI = action({
+  args: { url: v.string() },
+  handler: async (ctx, { url }) => {
+    const res = await fetch(url)  // actions can call external APIs
+    return res.json()
+  }
+})
+```
+
+### Convex Patterns for H.U.G.H.
+- **Optimistic updates**: `useMutation` returns an `OptimisticUpdate` function — update local state before server confirms
+- **Pagination**: `.paginate({ numItems: 50 })` on queries — don't load entire tables
+- **Indexes**: `defineTable(...).index('by_timestamp', ['timestamp'])` — always index fields you filter/sort by
+- **Scheduled functions**: `ctx.scheduler.runAfter(ms, api.fn, args)` — for timed automations
+- **Auth**: Convex Auth or custom JWT validation in `auth.config.ts` — not yet wired for H.U.G.H. (internal use, no public auth needed)
