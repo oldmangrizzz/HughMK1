@@ -9,7 +9,7 @@ async function boot() {
   console.log('[ H.U.G.H. ] PRISM PROTOCOL v2.0 — BOOT SEQUENCE')
 
   // Layer 1: Integrity check — anchor must be sealed and semantically consistent
-  const anchorPath = path.resolve(__dirname, '../soul_anchor/anchor.yaml')
+  const anchorPath = process.env['ANCHOR_PATH'] ?? path.resolve(__dirname, '../soul_anchor/anchor.yaml')
   const verifier = new IdentityVerification(anchorPath)
   const verification = await verifier.verify()
 

@@ -51,6 +51,7 @@ export class MCPHarborMaster {
   private somaticEngine: SomaticEngine
   private dialecticalEngine: DialecticalEngine
   private convexURL: string
+  private readonly inferenceBaseURL = process.env['INFERENCE_BASE_URL'] ?? 'http://localhost:8080'
   private pollingInterval: NodeJS.Timeout | null = null
 
   constructor(convexURL: string) {

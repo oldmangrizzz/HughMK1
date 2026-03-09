@@ -27,13 +27,14 @@ const REQUIRED_ANCHOR_KEYS = [
 ] as const
 
 // JSON key equivalents in the current hugh_soul_anchor.json structure
+// Also supports YAML anchor (anchor.yaml) which uses direct key paths
 const JSON_KEY_MAP: Record<(typeof REQUIRED_ANCHOR_KEYS)[number], string[]> = {
-  'identity.designation':   ['primary_identity', 'designation'],
-  'identity.operator':      ['primary_identity', 'full_name'],      // operator identity nested
-  composite_soul_anchor:    ['triple_anchor_system'],               // composite = triple anchor
-  invariants:               ['behavioral_framework'],
-  hotl_framework:           ['behavioral_framework', 'decision_framework'],
-  roger_roger_protocol:     ['technical_implementation'],
+  'identity.designation':   ['identity', 'designation'],
+  'identity.operator':      ['identity', 'operator'],
+  composite_soul_anchor:    ['composite_soul_anchor'],
+  invariants:               ['invariants'],
+  hotl_framework:           ['hotl_framework'],
+  roger_roger_protocol:     ['roger_roger_protocol'],
 }
 
 // Patterns representing invariant violations in proposed action strings.
@@ -96,7 +97,8 @@ export class IdentityVerification {
         }
       }
 
-      const storedHash = readFileSync(this.hashPath, 'utf-8').trim()
+      // Handle both plain hex hash and sha256sum format ("hash  filename")
+      const storedHash = readFileSync(this.hashPath, 'utf-8').trim().split(/\s+/)[0]
 
       if (currentHash !== storedHash) {
         return {
