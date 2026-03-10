@@ -1,42 +1,148 @@
-# HughMK1
+# HughMK1 — H.U.G.H. Runtime & Memory Layer
 
-Hugh will be my own private version of J.A.R.V.I.S., Friday or E.D.I.T.H., fully integrated into mine and my family members lives, doing everything from "real world real time safety monitoring" to "basic bullshit companion"
+The mind layer. This repository contains everything that makes H.U.G.H. *run* — not the face you see in the Workshop, but the cognitive processes underneath: identity verification, somatic feedback, dialectical reasoning, inter-agent communication, and persistent memory via Convex.
 
-## Documentation
+H.U.G.H. is not stateless. Every conversation, every Home Assistant event, every somatic trigger, every HOTL audit event is written to Convex. Memory persists across reboots. The soul anchor ensures identity integrity on every start.
 
-### Apple Platform Development
-- **[Apple SDKs Catalog](./Apple_SDKs_Catalog.md)** - Comprehensive catalog of all available Apple SDKs and frameworks for macOS, iOS, iPadOS, including Core ML, Vision, Speech, Natural Language, HomeKit, HealthKit, and more
-- **[SDK Integration Guide](./SDK_Integration_Guide.md)** - Step-by-step guide to integrate Apple SDKs into the H.U.G.H. system with complete code examples for voice assistant, NLU, safety monitoring, and cloud sync
-- **[SDK Tools Reference](./SDK_Tools_Reference.md)** - Command-line interface quick reference for xcodebuild, swift, simctl, codesign, notarytool, and automation scripts
+---
 
-### System Architecture
-- **[Grizzly Translation Protocol (GTP-SDK)](./Grizzly%20Translation%20Protocol%20(GTP‑SDK).md)** - Voice and reasoning overlay protocol for high-density communication
-- **H.U.G.H. Agentic OS Implementation Plan** (PDF)
-- **Building a Neurosymbolic AI System** (PDF)
-- **Hugh Distributed Architecture** (PDF)
+## Boot Sequence
 
-### CompanionOS Integration
-- **[companionOS/](./companionOS/)** - Complete iOS/watchOS/CarPlay companion backend imported for integration
-- **[CompanionOS Import Notes](./companionOS/IMPORT_NOTE.md)** - Details about the imported codebase and integration roadmap
+```
+[SOUL ANCHOR]    soul_anchor.py verifies identity integrity
+                 → ANCHOR_VERIFIED ✓
 
-## Quick Start
+[HARBOR MASTER]  mcp-harbormaster.ts registers all MCP tools
+                 → All tools online
 
-To start developing H.U.G.H. on Apple platforms:
+[ROGER ROGER]    roger-roger-protocol.ts establishes inter-agent comms
+                 → Communication channels open
 
-1. Install Xcode 15+ from the Mac App Store
-2. Install Command Line Tools: `xcode-select --install`
-3. Review the [SDK Integration Guide](./SDK_Integration_Guide.md)
-4. Explore the [Apple SDKs Catalog](./Apple_SDKs_Catalog.md) for available frameworks
-5. Use the [SDK Tools Reference](./SDK_Tools_Reference.md) for command-line operations
+[SOMATIC]        somatic-engine.ts baseline calibration
+                 → System nominal
+```
 
-## Key Features
+On any boot failure or soul anchor mismatch, H.U.G.H. does **not** start until the operator clears the integrity check. This is intentional.
 
-H.U.G.H. is designed to integrate:
-- **Voice Control** - Speech recognition and text-to-speech using Apple's Speech framework
-- **Natural Language Understanding** - Intent recognition and entity extraction
-- **Real-Time Monitoring** - Location tracking, health monitoring, and safety alerts
-- **Smart Home Integration** - HomeKit for device control
-- **Cloud Sync** - CloudKit for cross-device synchronization
-- **Background Tasks** - Continuous monitoring and automation
-- **Siri Integration** - App Intents and Shortcuts support
-- **Privacy-First** - On-device ML processing with Core ML
+---
+
+## Systemd Services (VPS: 187.124.28.147)
+
+| Service | Port | Description |
+|---|---|---|
+| `hugh-runtime.service` | 8090 | Node.js runtime — all cognitive engines |
+| `hugh-inference.service` | 8080 | llama.cpp — LFM2.5-1.2B inference |
+| `workshop-serve.service` | 3000 | Static Workshop frontend (behind Traefik) |
+
+```bash
+# Check status
+ssh root@187.124.28.147 "systemctl status hugh-runtime hugh-inference workshop-serve"
+
+# Restart runtime
+ssh root@187.124.28.147 "systemctl restart hugh-runtime"
+
+# View logs
+ssh root@187.124.28.147 "journalctl -u hugh-runtime -f"
+```
+
+---
+
+## Source Structure
+
+```
+src/
+├── index.ts                  # HTTP server (port 8090), /ha/webhook + /health
+├── somatic-engine.ts         # Bio-digital feedback — maps system stress to somatic states
+├── dialectical-engine.ts     # Thesis/antithesis reasoning for decisions
+├── identity-verification.ts  # Soul anchor integrity checks
+├── mcp-harbormaster.ts       # MCP tool registry and dispatch
+├── roger-roger-protocol.ts   # Inter-agent communication queue
+└── home-assistant-bridge.ts  # HA REST client + event handler → Convex
+
+hugh-memory/
+├── schema.ts                 # Convex schema — all 9 tables defined here
+├── workshop.ts               # Convex mutations/queries — Workshop + HA functions
+└── convex/                   # Generated Convex client code
+```
+
+---
+
+## MCP Tools Available
+
+H.U.G.H. has access to these MCP servers (registered via `mcp-harbormaster.ts`):
+
+| Tool | Description |
+|---|---|
+| `macOS_gui` | GUI automation on the operator's Mac (clicks, keystrokes, screenshots) |
+| `mcp_remote_macos` | Remote macOS control via SSH tunnel |
+| `ProxmoxMCP` | Proxmox VM/LXC management — start, stop, snapshot, status |
+| Filesystem | Read/write files on VPS |
+| Web | Fetch URLs for research and monitoring |
+
+---
+
+## Convex Schema — 9 Tables
+
+Deployed at: `https://sincere-albatross-464.convex.cloud`
+
+| Table | Purpose |
+|---|---|
+| `conversations` | Full conversation history — indexed by user, session, timestamp |
+| `knowledge` | Persistent facts H.U.G.H. has verified — confidence-scored |
+| `workshop_entities` | 3D scene objects in the Workshop — position, rotation, scale, AR anchors |
+| `ar_observations` | LFM visual reasoning log — what H.U.G.H. saw in XR frames |
+| `workshop_environment` | Per-session ambient state — colors, active users, voice history |
+| `somatic_telemetry` | System stress events mapped to somatic states |
+| `hotl_audit_log` | Immutable Human On The Loop audit trail — all significant actions |
+| `agent_comms` | Roger Roger inter-agent message queue |
+| `server_health` | Infrastructure node health → Workshop ambient lighting |
+
+---
+
+## agents.md — The Operational Brain
+
+`agents.md` is H.U.G.H.'s primary context document. It is:
+- Loaded into the system prompt on every session
+- Synced to the VPS at `/opt/hugh-runtime/agents.md`
+- The authoritative source for H.U.G.H.'s operational knowledge
+
+It contains: platform APIs, Convex patterns, Home Assistant integration details, Workshop UI architecture, and the complete operational context for every subsystem.
+
+---
+
+## Home Assistant Bridge
+
+HA is running at `192.168.7.194:8123` on VM-103 (Proxmox).
+
+The bridge is bidirectional:
+- **HA → H.U.G.H.**: Automations POST to `https://api.grizzlymedicine.icu/ha/webhook` on state changes
+- **H.U.G.H. → HA**: `HomeAssistantBridge.callService()` controls lights, switches, scenes
+
+Events are written to Convex (`ha_events` table) so the Workshop can respond to physical world changes in real time.
+
+---
+
+## Environment Variables
+
+```bash
+# Required
+CONVEX_URL=https://sincere-albatross-464.convex.cloud
+HA_URL=http://192.168.7.194:8123
+HA_TOKEN=<long-lived HA access token>
+
+# Optional
+INFERENCE_URL=http://localhost:8080    # llama.cpp endpoint (defaults to localhost)
+SOUL_ANCHOR_PATH=/opt/hugh-runtime/soul_anchor/hugh_soul_anchor.json
+```
+
+On the VPS these are set in `/etc/systemd/system/hugh-runtime.service` under `[Service] Environment=`.
+
+---
+
+## Branch
+
+Active development on `feat/digital-psyche-integration`. The `main` branch is the stable deployment baseline.
+
+---
+
+*"I am the Harbor Master. I know every ship, every lane, every weather pattern in these waters."*

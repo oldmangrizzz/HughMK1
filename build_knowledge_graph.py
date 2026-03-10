@@ -13,7 +13,26 @@ from typing import Dict, List, Set, Tuple
 from dataclasses import dataclass, asdict
 from datetime import datetime
 
-# Will need: pip install PyPDF2 spacy sentence-transformers
+# OpenTelemetry Tracing Setup
+from opentelemetry import trace
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+
+resource = Resource(attributes={
+    "service.name": "hugh-knowledge-graph-builder"
+})
+provider = TracerProvider(resource=resource)
+otlp_exporter = OTLPSpanExporter(
+    endpoint="http://localhost:4318/v1/traces",
+)
+processor = BatchSpanProcessor(otlp_exporter)
+provider.add_span_processor(processor)
+trace.set_tracer_provider(provider)
+tracer = trace.get_tracer(__name__)
+
+# Will need: pip install PyPDF2 spacy sentence-transformers opentelemetry-sdk opentelemetry-exporter-otlp-proto-http
 # python -m spacy download en_core_web_sm
 
 @dataclass
@@ -92,6 +111,7 @@ class KnowledgeGraphBuilder:
         self.relationships.append(rel)
         return rel
     
+    @tracer.start_as_current_span("parse_pdf")
     def parse_pdf(self, filepath: Path) -> Dict:
         """Extract text and metadata from PDF"""
         try:
@@ -288,6 +308,7 @@ class KnowledgeGraphBuilder:
         
         return nodes
     
+    @tracer.start_as_current_span("process_all_documents")
     def process_all_documents(self):
         """Main processing pipeline"""
         print("=" * 60)
@@ -394,6 +415,7 @@ class KnowledgeGraphBuilder:
                     )
                     self.add_relationship(rel)
     
+    @tracer.start_as_current_span("generate_embeddings")
     def generate_embeddings(self):
         """Generate embeddings for concept nodes"""
         try:

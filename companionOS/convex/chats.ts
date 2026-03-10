@@ -1,4 +1,3 @@
-import { randomUUID } from "crypto";
 import { v } from "convex/values";
 
 import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
@@ -39,7 +38,7 @@ export const upsertThread = mutation({
       name?: string;
     }
   ) => {
-    const tid = threadId ?? randomUUID();
+    const tid = threadId ?? crypto.randomUUID();
     const rows = await ctx.db
       .query("chats")
       .withIndex("by_user_updated", (q) => q.eq("userId", userId))

@@ -62,6 +62,31 @@ const schema = defineSchema({
     spec: v.string(),
     createdAt: v.number(),
   }).index("by_user", ["userId"]),
+  logs: defineTable({
+    source: v.string(),
+    level: v.string(),
+    message: v.string(),
+    context: v.optional(v.any()),
+    timestamp: v.number(),
+  }).index("by_source_timestamp", ["source", "timestamp"]),
+  psyche: defineTable({
+    dopamine: v.number(),
+    serotonin: v.number(),
+    cortisol: v.number(),
+    flags: v.object({
+      defensive_posture: v.boolean(),
+      high_motivation: v.boolean(),
+      emotional_instability: v.boolean(),
+      balanced_state: v.boolean(),
+    }),
+    timestamp: v.number(),
+  }).index("by_timestamp", ["timestamp"]),
+  gate: defineTable({
+    state: v.string(), // EMERGENT, TALK_ONLY, SHUTDOWN, LOCKED
+    reason: v.optional(v.string()),
+    signature: v.optional(v.string()),
+    timestamp: v.number(),
+  }).index("by_timestamp", ["timestamp"]),
 });
 
 export default schema;
